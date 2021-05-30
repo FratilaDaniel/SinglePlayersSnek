@@ -1,6 +1,5 @@
 function BoardCell(props){
     const rotationClass = "rotationNeeded" + props.rotationNeeded;
-    console.log(rotationClass)
     return (
         <td>
             <img 

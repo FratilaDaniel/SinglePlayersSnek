@@ -57,7 +57,6 @@ class Board extends React.Component{
         // compute new head position based on input
         // attach new head
         // remove old tail
-        console.log(direction);
         let [movingCoordinatesRow, movingCoordinatesCol] = [];
         let headOrientation = 0;
         switch(direction){
@@ -88,22 +87,25 @@ class Board extends React.Component{
         const removedTail = newSnekCoords.pop();
         this.setState({snek: newSnekCoords});
 
+
+
+
+
+        this.computeSnekOrientationAndParts(headOrientation);
+
+
         let newBoardValues = [...this.state.values];
         // first segment of snek is head
         // second becomes body
         // next to last becomes tail
         // last is removed
-
         // compute snek parts and orientations
-        newBoardValues[newSnekCoords[0].row][newSnekCoords[0].col] = settings.SNEK_HEAD_CELL_VALUE;
-        newBoardValues[newSnekCoords[1].row][newSnekCoords[1].col] = settings.SNEK_BODY_CELL_VALUE;
-        newBoardValues[newSnekCoords[newSnekCoords.length - 1].row][newSnekCoords[newSnekCoords.length - 1].col] = settings.SNEK_TAIL_CELL_VALUE;
+        
+        for(let segment of this.state.snek){
+            newBoardValues[segment.row][segment.col] = segment.part;
+        }
         newBoardValues[removedTail.row][removedTail.col] = settings.EMPTY_CELL_VALUE;
         this.setState({values: newBoardValues});
-
-        this.computeSnekOrientationAndParts(headOrientation);
-
-        console.log(this.state.snek);
     }
 
     computeSnekOrientationAndParts(headOrientation){
@@ -114,7 +116,7 @@ class Board extends React.Component{
         // second to (second to last) segments  
         for(let segmentIndex = 1; segmentIndex < snekLength - 1; segmentIndex++){
             // if previous and next segment are on the same row/col part is simple BODY, else L TURN
-            if(newSnek[segmentIndex - 1].row === newSnek[segmentIndex + 1].row ){
+            if(newSnek[segmentIndex - 1].row === newSnek[segmentIndex + 1].row){
                 // horizontal BODY
                 newSnek[segmentIndex].part = settings.SNEK_BODY_CELL_VALUE;
                 newSnek[segmentIndex].orientation = 1;
@@ -127,34 +129,62 @@ class Board extends React.Component{
             else{
                 // part is TURN
                 newSnek[segmentIndex].part = settings.SNEK_TURN_CELL_VALUE;
-                if(newSnek[segmentIndex - 1].row < newSnek[segmentIndex + 1].row){
-                    // orientation either 0 or 1 
-                    if(newSnek[segmentIndex - 1].col < newSnek[segmentIndex + 1].col){
-                        newSnek[segmentIndex].orientation = 0;
+                let orientation = 0;
+                const A = newSnek[segmentIndex - 1], B = newSnek[segmentIndex], C = newSnek[segmentIndex + 1];
+                if(A.row === B.row){
+                    if(A.col < B.col){
+                        if(B.row > C.row){
+                            orientation = 3;
+                        }
+                        else{
+                            orientation = 2;
+                        }
                     }
                     else{
-                        newSnek[segmentIndex].orientation = 1;
+                        if(B.row > C.row){
+                            orientation = 0;
+                        }
+                        else{
+                            orientation = 1;
+                        }
                     }
                 }
-                else{
-                    // orientation either 2 or 3
-                    if(newSnek[segmentIndex - 1].col > newSnek[segmentIndex + 1].col){
-                        newSnek[segmentIndex].orientation = 2;
+                else{ // C.row === B.row
+                    if(C.col < B.col){
+                        if(B.row > A.row){
+                            orientation = 3;
+                        }
+                        else{
+                            orientation = 2;
+                        }
                     }
                     else{
-                        newSnek[segmentIndex].orientation = 3;
+                        if(B.row > A.row){
+                            orientation = 0;
+                        }
+                        else{
+                            orientation = 1;
+                        }
                     }
                 }
+                newSnek[segmentIndex].orientation = orientation;
             }
         }
 
         // last segemnt is tail, orientation given by previous segment
         // if previous segment is TURN then tail has same orientation, else orientation + 1
-        if(newSnek[snekLength - 2].part === settings.SNEK_TURN_CELL_VALUE){
-            newSnek[snekLength - 1].orientation = newSnek[snekLength - 2].orientation; 
+        newSnek[snekLength - 1].part = settings.SNEK_TAIL_CELL_VALUE;
+        if(newSnek[snekLength - 2].row < newSnek[snekLength - 1].row){
+            newSnek[snekLength - 1].orientation = 1;
         }
-        else{
-            newSnek[snekLength - 1].orientation = newSnek[snekLength - 2].orientation + 1;
+        else if (newSnek[snekLength - 2].row > newSnek[snekLength - 1].row){
+            newSnek[snekLength - 1].orientation = 3;
+        }
+        else if(newSnek[snekLength - 2].col > newSnek[snekLength - 1].col){
+            newSnek[snekLength - 1].orientation = 2;
+        }
+        else {
+            newSnek[snekLength - 1].orientation = 0;
         }
         this.setState({snek: newSnek});
     }
@@ -193,13 +223,20 @@ class Board extends React.Component{
                 <table>
                     <tbody>
                     {
-                        this.state.values.map((row) => {
+                        this.state.values.map((row, rowIndex) => {
                             return (
                                 <tr>
                                 {
-                                    row.map((cell, index) => {    
+                                    row.map((cell, colIndex) => {    
                                     let primaryImage, secondaryImage = grassImage;
                                     let rotationNeededInDegrees = 0;
+                                    for(let i = 0; i < this.state.snek.length; i++){
+                                        if(this.state.snek[i].row === rowIndex && this.state.snek[i].col === colIndex){
+                                            rotationNeededInDegrees = this.state.snek[i].orientation * 90;
+                                            break;
+                                        }
+                                    }
+                                    
                                     switch(cell){
                                         case settings.SNEK_HEAD_CELL_VALUE: primaryImage = SnakeHeadImage; break; // rotate if needed
                                         case settings.SNEK_BODY_CELL_VALUE: primaryImage = SnakeBodyImage; break;
@@ -208,7 +245,7 @@ class Board extends React.Component{
                                         default: [primaryImage, secondaryImage] = [grassImage, null]; break;
                                     }
                                         return <BoardCell 
-                                            key={index} 
+                                            key={colIndex} 
                                             primaryImage={primaryImage} 
                                             backgroundImage={secondaryImage}
                                             rotationNeeded={rotationNeededInDegrees}
