@@ -6,6 +6,10 @@ const settings = {
     SNEK_BODY_CELL_VALUE: 2,
     SNEK_TURN_CELL_VALUE: 3,
     SNEK_TAIL_CELL_VALUE: 4,
+    USER_INPUT_UP: "w",
+    USER_INPUT_LEFT: "a",
+    USER_INPUT_DOWN: "s",
+    USER_INPUT_RIGHT: "d",
 };
 
 export default settings;
