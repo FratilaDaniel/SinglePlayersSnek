@@ -34,9 +34,21 @@ class Board extends React.Component{
                 orientation: 0 // up - right
             },
             {
-                part: settings.SNEK_TAIL_CELL_VALUE,
+                part: settings.SNEK_BODY_CELL_VALUE,
                 row: 5,
                 col: 4,
+                orientation: 1 // left - right
+            },
+            {
+                part: settings.SNEK_BODY_CELL_VALUE,
+                row: 5,
+                col: 5,
+                orientation: 1 // left - right
+            },
+            {
+                part: settings.SNEK_TAIL_CELL_VALUE,
+                row: 5,
+                col: 6,
                 orientation: 0 // left - right
             },
             ],
@@ -52,7 +64,6 @@ class Board extends React.Component{
         // move snek if in bounds
         const keyPressed = event.key.toLowerCase();
         this.moveSnek(keyPressed);
-        console.log(keyPressed);
     }
 
     // check if user gave as input the opposite of head direction
@@ -60,17 +71,22 @@ class Board extends React.Component{
         return (Math.abs(direction - this.state.snek[0].orientation) === 2)
     }
 
-    // check if snek goes out of bounds or on itself
-    checkInvalidCell(movingCoordinatesRow, movingCoordinatesCol){
-        let currentSnekHeadRow = this.state.snek[0].row,
-            currentSnekHeadCol = this.state.snek[0].col;
-        console.log([currentSnekHeadRow, currentSnekHeadCol], [movingCoordinatesRow, movingCoordinatesCol], [this.state.rows, this.state.cols]);
-        return(
-            currentSnekHeadRow + movingCoordinatesRow < 0 ||
-            currentSnekHeadCol + movingCoordinatesCol < 0 ||
-            currentSnekHeadRow + movingCoordinatesRow >= this.state.rows ||
-            currentSnekHeadCol + movingCoordinatesCol >= this.state.cols
-        );
+    checkSnekOutOfBounds(nextSnekHeadRow, nextSnekHeadCol){
+        return (nextSnekHeadRow < 0 || nextSnekHeadCol < 0 
+            || nextSnekHeadRow >= this.state.rows || nextSnekHeadCol >= this.state.cols);
+    }
+
+    checkSnekHitsBody(nextSnekHeadRow, nextSnekHeadCol){
+        let snekHitsHimself = false;
+        // last segment disappears, does not count
+        for(let segmentIndex = 0; segmentIndex < this.state.snek.length - 1; segmentIndex++){
+            if(nextSnekHeadRow === this.state.snek[segmentIndex].row 
+                && nextSnekHeadCol === this.state.snek[segmentIndex].col){
+                    snekHitsHimself = true;
+                    break;
+                }
+        }
+        return snekHitsHimself;
     }
 
     moveSnek(direction){
@@ -103,29 +119,52 @@ class Board extends React.Component{
         if(invalidUserInput){
             return;
         }
-        let invalidNextCell = this.checkInvalidCell(movingCoordinatesRow, movingCoordinatesCol);
-        if(invalidNextCell){
-            this.setState({isDead: true});
-            document.removeEventListener("keypress", this.handleUserInput);
-            return;
-        }
 
+
+        const removedTail = this.state.snek.pop();
         let newSnekCoords = [...this.state.snek];
         let newSegment = {...newSnekCoords[0]};
         newSegment.row += movingCoordinatesRow;
         newSegment.col += movingCoordinatesCol;
         newSnekCoords = [newSegment, ...newSnekCoords];
-        const removedTail = newSnekCoords.pop();
+        let isOutOfBounds = this.checkSnekOutOfBounds(newSegment.row, newSegment.col);
+        let snekBitesSelf = this.checkSnekHitsBody(newSegment.row, newSegment.col);
+
         this.setState({snek: newSnekCoords});
 
         this.computeSnekOrientationAndParts(headOrientation);
 
         let newBoardValues = [...this.state.values];
-        for(let segment of this.state.snek){
+        newBoardValues[removedTail.row][removedTail.col] = settings.EMPTY_CELL_VALUE;
+
+        let startSegment = 0;
+        if(isOutOfBounds){
+            this.setState({isDead: true}); 
+            startSegment = 1;
+            this.setState({snek: newSnekCoords});
+        }
+        else if(snekBitesSelf){
+            for(let i = 1; i < this.state.snek.length; i++){
+                if(this.state.snek[i].row === this.state.snek[0].row &&
+                    this.state.snek[i].col === this.state.snek[0].col){
+                        newSnekCoords[i].part = settings.SNEK_HEAD_CELL_VALUE;
+                        this.setState({snek: newSnekCoords});
+                        break;
+                }
+            }
+            this.setState({isDead: true}); 
+        }
+        for(let segmentIndex = startSegment; segmentIndex < this.state.snek.length; segmentIndex++){
+            const segment = this.state.snek[segmentIndex];
             newBoardValues[segment.row][segment.col] = segment.part;
         }
-        newBoardValues[removedTail.row][removedTail.col] = settings.EMPTY_CELL_VALUE;
         this.setState({values: newBoardValues});
+
+        if(this.state.isDead){
+            document.removeEventListener("keypress", this.handleUserInput);
+            return;
+        }
+
     }
 
     computeSnekOrientationAndParts(headOrientation){
@@ -227,13 +266,6 @@ class Board extends React.Component{
             initialValues[segment.row][segment.col] = segment.part;
         });
         this.setState({values: initialValues});
-    }
-    
-    logCurrentBoardState(){
-        console.log("---------------");
-        console.log(this.state.rows);
-        console.log(this.state.cols);
-        console.log(this.state.values);
     }
 
     render(){
