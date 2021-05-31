@@ -6,6 +6,7 @@ import SnakeHeadImage from "../resources/Snake_Head.svg";
 import SnakeBodyImage from "../resources/Snake_Body.svg";
 import SnakeTurnImage from "../resources/Snake_Turn.svg";
 import SnakeTailImage from "../resources/Snake_Tail.svg";
+import AppleImage from "../resources/apple.png";
 
 
 class Board extends React.Component{
@@ -52,7 +53,12 @@ class Board extends React.Component{
                 orientation: 0 // left - right
             },
             ],
+            apple: {
+                row: 1,
+                col: 1,
+            },
             isDead: false,
+            gameWon: false
         }
         // bind wasd
         this.handleUserInput = this.onUserInput.bind(this);
@@ -121,11 +127,25 @@ class Board extends React.Component{
         }
 
 
-        const removedTail = this.state.snek.pop();
+        
         let newSnekCoords = [...this.state.snek];
         let newSegment = {...newSnekCoords[0]};
+        let newBoardValues = [...this.state.values];
         newSegment.row += movingCoordinatesRow;
         newSegment.col += movingCoordinatesCol;
+        if(!this.snekGotApple(newSegment.row, newSegment.col)){
+            // apple not eaten, move the whole snake
+            const removedTail = newSnekCoords.pop();
+            newBoardValues[removedTail.row][removedTail.col] = settings.EMPTY_CELL_VALUE;
+        }
+        else{
+            // apple eaten, move just the head
+            this.getNextAppleCoords();
+            if(!this.state.gameWon){
+                newBoardValues[this.state.apple.row][this.state.apple.col] = settings.APPLE_CELL_VALUE;
+            }
+        }
+        
         newSnekCoords = [newSegment, ...newSnekCoords];
         let isOutOfBounds = this.checkSnekOutOfBounds(newSegment.row, newSegment.col);
         let snekBitesSelf = this.checkSnekHitsBody(newSegment.row, newSegment.col);
@@ -134,8 +154,7 @@ class Board extends React.Component{
 
         this.computeSnekOrientationAndParts(headOrientation);
 
-        let newBoardValues = [...this.state.values];
-        newBoardValues[removedTail.row][removedTail.col] = settings.EMPTY_CELL_VALUE;
+        
 
         let startSegment = 0;
         if(isOutOfBounds){
@@ -154,17 +173,50 @@ class Board extends React.Component{
             }
             this.setState({isDead: true}); 
         }
+        
         for(let segmentIndex = startSegment; segmentIndex < this.state.snek.length; segmentIndex++){
             const segment = this.state.snek[segmentIndex];
             newBoardValues[segment.row][segment.col] = segment.part;
         }
         this.setState({values: newBoardValues});
-
+        if(this.state.gameWon){
+            document.removeEventListener("keypress", this.handleUserInput);
+            return;
+        }
         if(this.state.isDead){
             document.removeEventListener("keypress", this.handleUserInput);
             return;
         }
 
+    }
+
+    snekGotApple(newHeadRow, newHeadCol){
+        return newHeadRow === this.state.apple.row && newHeadCol === this.state.apple.col;
+    }
+
+    getNextAppleCoords(){
+        // some bug here
+        const availableSlots = this.state.rows * this.state.cols - this.state.snek.length - 1
+        if(availableSlots === 0){
+            this.setState({apple: {row: -1, col:-1}, gameWon: true});
+        }
+        let randomNumber = Math.floor(Math.random() * availableSlots);
+        for(let i = 0; i < this.state.rows; i++){
+            for(let j = 0; j < this.state.cols; j++){
+                if(this.state.values[i][j] === settings.EMPTY_CELL_VALUE){
+                    randomNumber--;
+                    if(randomNumber <= 0){
+                        const newApple = {row: i, col: j};
+                        this.setState({apple: newApple});
+                        console.log(this.state.apple);
+                        return;
+                    }
+                }
+                else{
+                    
+                }
+            }
+        }
     }
 
     computeSnekOrientationAndParts(headOrientation){
@@ -265,6 +317,7 @@ class Board extends React.Component{
         this.state.snek.forEach((segment) => {
             initialValues[segment.row][segment.col] = segment.part;
         });
+        initialValues[this.state.apple.row][this.state.apple.col] = settings.APPLE_CELL_VALUE;
         this.setState({values: initialValues});
     }
 
@@ -294,6 +347,7 @@ class Board extends React.Component{
                                         case settings.SNEK_BODY_CELL_VALUE: primaryImage = SnakeBodyImage; break;
                                         case settings.SNEK_TURN_CELL_VALUE: primaryImage = SnakeTurnImage; break;
                                         case settings.SNEK_TAIL_CELL_VALUE: primaryImage = SnakeTailImage; break;
+                                        case settings.APPLE_CELL_VALUE: primaryImage = AppleImage; secondaryImage = AppleImage; break;
                                         default: [primaryImage, secondaryImage] = [grassImage, null]; break;
                                     }
                                         return <BoardCell 
@@ -310,6 +364,7 @@ class Board extends React.Component{
                     </tbody>
                 </table>
                 {this.state.isDead ? <h1> YOU DIED! </h1> : null}
+                {this.state.gameWon ? <h1> YOU WON THE GAME, cheater! </h1> : null}
             </div>
         );
     }   
