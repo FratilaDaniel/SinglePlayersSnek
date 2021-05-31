@@ -40,6 +40,7 @@ class Board extends React.Component{
                 orientation: 0 // left - right
             },
             ],
+            isDead: false,
         }
         // bind wasd
         this.handleUserInput = this.onUserInput.bind(this);
@@ -51,6 +52,25 @@ class Board extends React.Component{
         // move snek if in bounds
         const keyPressed = event.key.toLowerCase();
         this.moveSnek(keyPressed);
+        console.log(keyPressed);
+    }
+
+    // check if user gave as input the opposite of head direction
+    checkInvalidUserInput(direction){
+        return (Math.abs(direction - this.state.snek[0].orientation) === 2)
+    }
+
+    // check if snek goes out of bounds or on itself
+    checkInvalidCell(movingCoordinatesRow, movingCoordinatesCol){
+        let currentSnekHeadRow = this.state.snek[0].row,
+            currentSnekHeadCol = this.state.snek[0].col;
+        console.log([currentSnekHeadRow, currentSnekHeadCol], [movingCoordinatesRow, movingCoordinatesCol], [this.state.rows, this.state.cols]);
+        return(
+            currentSnekHeadRow + movingCoordinatesRow < 0 ||
+            currentSnekHeadCol + movingCoordinatesCol < 0 ||
+            currentSnekHeadRow + movingCoordinatesRow >= this.state.rows ||
+            currentSnekHeadCol + movingCoordinatesCol >= this.state.cols
+        );
     }
 
     moveSnek(direction){
@@ -79,6 +99,17 @@ class Board extends React.Component{
                 break;
             default: /* invalid input, ignore*/ break;
         }
+        let invalidUserInput = this.checkInvalidUserInput(headOrientation);
+        if(invalidUserInput){
+            return;
+        }
+        let invalidNextCell = this.checkInvalidCell(movingCoordinatesRow, movingCoordinatesCol);
+        if(invalidNextCell){
+            this.setState({isDead: true});
+            document.removeEventListener("keypress", this.handleUserInput);
+            return;
+        }
+
         let newSnekCoords = [...this.state.snek];
         let newSegment = {...newSnekCoords[0]};
         newSegment.row += movingCoordinatesRow;
@@ -87,20 +118,9 @@ class Board extends React.Component{
         const removedTail = newSnekCoords.pop();
         this.setState({snek: newSnekCoords});
 
-
-
-
-
         this.computeSnekOrientationAndParts(headOrientation);
 
-
         let newBoardValues = [...this.state.values];
-        // first segment of snek is head
-        // second becomes body
-        // next to last becomes tail
-        // last is removed
-        // compute snek parts and orientations
-        
         for(let segment of this.state.snek){
             newBoardValues[segment.row][segment.col] = segment.part;
         }
@@ -257,6 +277,7 @@ class Board extends React.Component{
                     }
                     </tbody>
                 </table>
+                {this.state.isDead ? <h1> YOU DIED! </h1> : null}
             </div>
         );
     }   
