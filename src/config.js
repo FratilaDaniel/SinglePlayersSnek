@@ -1,6 +1,6 @@
 const settings = {
-    BOARD_ROWS: 6,
-    BOARD_COLS: 7,
+    BOARD_ROWS: 10,
+    BOARD_COLS: 10,
     EMPTY_CELL_VALUE: 0,
     SNEK_HEAD_CELL_VALUE: 1,
     SNEK_BODY_CELL_VALUE: 2,

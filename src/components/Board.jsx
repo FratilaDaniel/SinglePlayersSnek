@@ -58,7 +58,8 @@ class Board extends React.Component{
                 col: 1,
             },
             isDead: false,
-            gameWon: false
+            gameWon: false,
+            lastValidUserInput: settings.USER_INPUT_UP,
         }
         // bind wasd
         this.handleUserInput = this.onUserInput.bind(this);
@@ -68,9 +69,17 @@ class Board extends React.Component{
         // get user input
         // check if snek in bounds with new coordinates
         // move snek if in bounds
-        const keyPressed = event.key.toLowerCase();
-        this.moveSnek(keyPressed);
+        const keyPressed = event.key.toLowerCase(); // becomes last commad
+        if((keyPressed === settings.USER_INPUT_UP && this.state.snek[0].orientation !== 2)
+            || (keyPressed === settings.USER_INPUT_DOWN && this.state.snek[0].orientation !== 0)
+            || (keyPressed === settings.USER_INPUT_LEFT && this.state.snek[0].orientation !== 1)
+            || (keyPressed === settings.USER_INPUT_RIGHT && this.state.snek[0].orientation !== 3)){
+            this.setState({lastValidUserInput: keyPressed});
+        }
     }
+
+
+
 
     // check if user gave as input the opposite of head direction
     checkInvalidUserInput(direction){
@@ -96,6 +105,7 @@ class Board extends React.Component{
     }
 
     moveSnek(direction){
+        //debugger;
         // compute new head position based on input
         // attach new head
         // remove old tail
@@ -181,10 +191,12 @@ class Board extends React.Component{
         this.setState({values: newBoardValues});
         if(this.state.gameWon){
             document.removeEventListener("keypress", this.handleUserInput);
+            clearInterval(this.timerID);
             return;
         }
         if(this.state.isDead){
             document.removeEventListener("keypress", this.handleUserInput);
+            clearInterval(this.timerID);
             return;
         }
 
@@ -208,7 +220,6 @@ class Board extends React.Component{
                     if(randomNumber <= 0){
                         const newApple = {row: i, col: j};
                         this.setState({apple: newApple});
-                        console.log(this.state.apple);
                         return;
                     }
                 }
@@ -302,6 +313,11 @@ class Board extends React.Component{
     
     componentDidMount(){
         this.initializeBoardValues();
+        this.timerID = setInterval(() => this.moveSnek(this.state.lastValidUserInput), 250);
+    }
+
+    componentWillUnmount(){
+        // clearInterval(this.timerID);
     }
     
     initializeBoardValues(){
