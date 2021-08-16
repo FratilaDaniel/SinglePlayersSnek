@@ -1,0 +1,54 @@
+body{
+    background-color: grey;
+}
+
+#app span{
+    color: white;
+    font-weight: 700;
+}
+
+#app {
+    text-align: center;
+}
+
+table{
+    margin: 10vh auto;
+    border-collapse: collapse;
+    border: 10px solid black;
+}
+
+td{
+    border: 1px solid black;
+    padding: 0;
+}
+
+img{
+    display: block;
+    width: 64px;
+    height: 64px;
+}
+
+.imgtop{
+    z-index: 1;
+    position: absolute;
+}
+
+.boardContainer{
+    height: 100vh;
+}
+
+.rotationNeeded0{
+    transform: rotate(0deg);
+}
+
+.rotationNeeded90{
+    transform: rotate(90deg);
+}
+
+.rotationNeeded180{
+    transform: rotate(180deg);
+}
+
+.rotationNeeded270{
+    transform: rotate(270deg);
+}
